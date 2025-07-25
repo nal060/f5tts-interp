@@ -1,0 +1,52 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Jupyter Notebook checkpoints (if ever used)
+.ipynb_checkpoints/
+
+# Environment files
+.env
+.venv/
+env/
+venv/
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Conda environment backups
+*.bak
+
+# Results and data/output folders
+results/
+data/
+*.h5
+*.pkl
+*.npz
+*.npy
+*.log
+*.pt
+*.pth
+*.ckpt
+
+# Cluster/job files
+slurm-*.out
+
+# VSCode and PyCharm settings
+.vscode/
+.idea/
+
+# Apptainer/Singularity image files
+*.sif
+*.img
+
+# If you ever use wandb logging
+wandb/
+
+# Misc
+*.tar.gz
+*.zip
+*.wav
