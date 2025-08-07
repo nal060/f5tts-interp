@@ -734,7 +734,6 @@ class JointAttnProcessor:
         c_rope=None,  # rotary position embedding for c
     ) -> torch.FloatTensor:
         residual = x
-
         batch_size = c.shape[0]
 
         # `sample` projections
@@ -792,29 +791,40 @@ class JointAttnProcessor:
         else:
             attn_mask = None
 
-        x = F.scaled_dot_product_attention(query, key, value, attn_mask=attn_mask, dropout_p=0.0, is_causal=False)
-        x = x.transpose(1, 2).reshape(batch_size, -1, attn.heads * head_dim)
-        x = x.to(query.dtype)
+        # --- attention matrix computation ---
+        # Compute raw attention scores
+        attn_scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(head_dim)  # (b, heads, seq, seq)
+        if attn_mask is not None:
+            attn_scores = attn_scores.masked_fill(~attn_mask, float('-inf'))
+        attn_matrix = torch.softmax(attn_scores, dim=-1)  # (b, heads, seq, seq)
+
+        # Compute attention output (pre-projection)
+        pre_proj_output = torch.matmul(attn_matrix, value)  # (b, heads, seq, head_dim)
+        pre_proj_output_cat = pre_proj_output.transpose(1, 2).reshape(batch_size, -1, attn.heads * head_dim)
+        pre_proj_output_cat = pre_proj_output_cat.to(query.dtype)
 
         # Split the attention outputs.
         x, c = (
-            x[:, : residual.shape[1]],
-            x[:, residual.shape[1] :],
+            pre_proj_output_cat[:, : residual.shape[1]],
+            pre_proj_output_cat[:, residual.shape[1] :],
         )
 
         # linear proj
-        x = attn.to_out[0](x)
+        x_proj = attn.to_out[0](x)
         # dropout
-        x = attn.to_out[1](x)
+        x_proj = attn.to_out[1](x_proj)
         if not attn.context_pre_only:
-            c = attn.to_out_c(c)
+            c_proj = attn.to_out_c(c)
+        else:
+            c_proj = c
 
         if mask is not None:
             mask = mask.unsqueeze(-1)
-            x = x.masked_fill(~mask, 0.0)
-            # c = c.masked_fill(~mask, 0.)  # no mask for c (text)
+            x_proj = x_proj.masked_fill(~mask, 0.0)
+            # c_proj = c_proj.masked_fill(~mask, 0.)  # no mask for c (text)
 
-        return x, c
+        # Return x_proj, c_proj, attn_matrix, pre_proj_output_cat
+        return x_proj, c_proj, attn_matrix, pre_proj_output_cat
 
 
 # DiT Block
@@ -970,3 +980,10 @@ class TimestepEmbedding(nn.Module):
         time_hidden = self.time_embed(timestep)
         time_hidden = time_hidden.to(timestep.dtype)
         time = self.time_mlp(time_hidden)  # b d
+
+
+# what needs to be extracted from the model?
+# output of each block (after each MMDiT block), output of each FF layer (feedforward inside each block)
+#output of each self-attention layer before res connection (raw-attention output)
+#self-attention matriz (softmax(qk^T)for each head)
+# output of self-attention before the output projection (W^O), the concatenated head outputs before w^o)

@@ -1,12 +1,12 @@
 import sys
-sys.path.insert(0, r"C:\Users\nicol\Desktop\slime\F5-TTS\src")
+#sys.path.insert(0, r"C:\Users\nicol\Desktop\slime\F5-TTS\src")
 sys.path.insert(0, "/workspace/F5-TTS/src")
 print("Python executable:", sys.executable)
 
 import torch
 from collections import defaultdict
 
-# Import your custom MMDiT model
+# Import custom MMDiT model
 from f5_tts.model.backbones.mmdit import MMDiT
 
 # ---- Configuration ----
