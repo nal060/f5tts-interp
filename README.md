@@ -18,4 +18,4 @@ interpretability research on f5-tts focusing on understanding what happens insid
 
 `model/` - copy of f5-tts model code with extra comments explaining everything
 
-right now we can handle block outputs and ffn layers, later well dig into attention matrices and pre-projection outputs but this is enough to start doing real research
+right now we can handle block outputs and ffn layers, later well dig into attention matrices and pre-projection outputs etc
